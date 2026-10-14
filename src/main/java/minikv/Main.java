@@ -65,12 +65,31 @@ public class Main {
         //     db.put("key4", "val4");
         //     db.close();
         // }catch(Exception e){}
-        MemTable m = new MemTable();
-        m.put("a", "1"); m.put("b", "2"); m.delete("c");
-        try{SSTableWriter.write("sst-test.db", m.entriesInOrder());}catch(Exception e){};
+        // MemTable m = new MemTable();
+        // m.put("a", "1"); m.put("b", "2"); m.delete("c");
+        // try{SSTableWriter.write("sst-test.db", m.entriesInOrder());}catch(Exception e){};
 
-        for (String k : new String[]{"a", "b", "c", "d", "0"}) {
-            System.out.println(k + " -> " + SSTableReader.get("sst-test.db", k));
-        } 
+        // for (String k : new String[]{"a", "b", "c", "d", "0"}) {
+        //     System.out.println(k + " -> " + SSTableReader.get("sst-test.db", k));
+        // } 
+
+        // KVStore db = new KVStore("data");
+        // db.put("key1", "val1");
+        // db.put("key2", "val2");
+        // db.put("key3", "val3");   // 24 bytes, triggers the flush
+        // db.put("key4", "val4");
+
+        // System.out.println(db.get("key1"));   // Found[value=val1]  (from the SSTable)
+        // System.out.println(db.get("key4"));   // Found[value=val4]  (from the memtable)
+        // System.out.println(db.get("nope"));   // Absent[]
+        // db.delete("key1");
+        // System.out.println(db.get("key1"));   // Deleted[]  (the memtable tombstone hides the SSTable value)
+        // db.close();
+
+        KVStore db = new KVStore("data");
+        System.out.println(db.get("key1"));   // Deleted[]  (the tombstone was in the WAL, replayed into the memtable)
+        System.out.println(db.get("key2"));   // Found[value=val2]
+        System.out.println(db.get("key4"));   // Found[value=val4]
+        db.close();
     }
 }

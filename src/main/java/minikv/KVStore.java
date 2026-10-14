@@ -37,15 +37,22 @@ public class KVStore implements AutoCloseable{
             }
         }
 
+        int[] replayed = {0};   // an array, so the anonymous class can change it
+
         wal.replay(new WalHandler() {
             public void onPut(String k, String v){
                 memtable.put(k,v);
+                replayed[0]++;
             }
 
             public void onDelete(String k){
                 memtable.delete(k);
+                replayed[0]++;
             }
         });
+
+        System.out.println("startup: " + sstables.size() + " sstable(s) found, " + replayed[0] + " record(s) replayed from WAL");
+
     }
 
     public void put(String key, String value) throws IOException{
@@ -61,7 +68,29 @@ public class KVStore implements AutoCloseable{
     }
 
     public LookupResult get(String key){
-        return memtable.get(key);
+        LookupResult r = memtable.get(key);
+        if(!(r instanceof LookupResult.Absent)){
+            System.out.println("get(" + key + ") -> " + r + "  [MEMTABLE]");
+            return r;
+        }
+
+        for(int i = sstables.size()-1;i>=0;i--){
+            try{
+                r = SSTableReader.get(sstables.get(i), key);
+            }catch(Exception e){
+                System.out.println(e);
+            }
+            
+            if (!(r instanceof LookupResult.Absent)) {
+                System.out.println("get(" + key + ") -> " + r + "  [SSTABLE " + sstables.get(i) + "]");
+                return r;
+            }
+            System.out.println("get(" + key + ") not in " + sstables.get(i));
+        }
+
+        System.out.println("get(" + key + ") -> Absent  [NOT FOUND anywhere]");
+        return new LookupResult.Absent();
+        
     }
 
     private void flush() throws IOException {
@@ -75,6 +104,7 @@ public class KVStore implements AutoCloseable{
         memtable = new MemTable();
         sstables.add(path);
         nextSstId++;
+        System.out.println("flush -> " + path);
     }
 
     @Override 
