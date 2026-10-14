@@ -1,5 +1,7 @@
 package minikv;
 
+import java.io.File;
+
 public class Main {
     public static void main(String args[]){
 
@@ -39,10 +41,29 @@ public class Main {
         //     // db.delete("a");
 
         // }catch(Exception e){}
-        try (KVStore db = new KVStore("wal.log")) {
-            System.out.println(db.get("a"));   // Deleted[]
-            System.out.println(db.get("b"));   // Found[value=2]
-            System.out.println(db.get("c"));   // Absent[]
+        // try (KVStore db = new KVStore("wal.log")) {
+        //     System.out.println(db.get("a"));   // Deleted[]
+        //     System.out.println(db.get("b"));   // Found[value=2]
+        //     System.out.println(db.get("c"));   // Absent[]
+        // }catch(Exception e){}
+
+        // MemTable m = new MemTable();
+        // m.put("a", "1");
+        // m.put("b", "2");
+        // m.delete("c");
+        // try{
+        //     SSTableWriter.write("sst-1.db", m.entriesInOrder());
+        // }catch(Exception e){}
+
+        System.out.println("data dir: " + new File("data").getAbsolutePath());
+
+        try{
+            KVStore db = new KVStore("data");
+            db.put("key1", "val1");
+            db.put("key2", "val2");
+            db.put("key3", "val3");   // 24 bytes, triggers the flush
+            db.put("key4", "val4");
+            db.close();
         }catch(Exception e){}
     }
 }
