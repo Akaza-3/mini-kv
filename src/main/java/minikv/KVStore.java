@@ -13,6 +13,8 @@ public class KVStore implements AutoCloseable{
     private final List<String>sstables = new ArrayList<>();
     private int nextSstId = 1; 
 
+    private final List<BloomFilter>filters = new ArrayList<>();
+
     private static int idOf(File f){
         String n = f.getName();
         return Integer.parseInt(n.substring(4,n.length()-3));
@@ -33,6 +35,7 @@ public class KVStore implements AutoCloseable{
             Arrays.sort(files,Comparator.comparingInt(KVStore::idOf));
             for(File f: files){
                 sstables.add(f.getPath());
+                filters.add(SSTableReader.loadBloom(f.getPath()));
                 nextSstId = idOf(f)+1;
             }
         }
@@ -75,8 +78,15 @@ public class KVStore implements AutoCloseable{
         }
 
         for(int i = sstables.size()-1;i>=0;i--){
+
+            String path = sstables.get(i);
+            if(!filters.get(i).mightContain(key)){
+                System.out.println("get(" + key + ") skipped " + path + "  [BLOOM: definitely absent]");
+                continue;
+            }
+
             try{
-                r = SSTableReader.get(sstables.get(i), key);
+                r = SSTableReader.get(path, key);
             }catch(Exception e){
                 System.out.println(e);
             }
@@ -103,6 +113,7 @@ public class KVStore implements AutoCloseable{
 
         memtable = new MemTable();
         sstables.add(path);
+        filters.add(SSTableReader.loadBloom(path));
         nextSstId++;
         System.out.println("flush -> " + path);
     }

@@ -25,6 +25,7 @@ public class SSTableWriter {
         String tmp = path + ".tmp";
         List<String> indexKeys = new ArrayList<>();
         List<Long> indexOffsets = new ArrayList<>();
+        List<String>allKeys = new ArrayList<>();
 
         try (FileOutputStream fos = new FileOutputStream(tmp);
              DataOutputStream out = new DataOutputStream(new BufferedOutputStream(fos))) {
@@ -35,6 +36,7 @@ public class SSTableWriter {
                     indexKeys.add(me.getKey());
                     indexOffsets.add((long)out.size());
                 }
+                allKeys.add(me.getKey());
                 writeRecord(out,me.getKey(),me.getValue());
                 i++;
             }
@@ -47,6 +49,12 @@ public class SSTableWriter {
                 out.writeLong(indexOffsets.get(j));
             }
 
+            long bloomOffset = out.size();
+            BloomFilter bf = new BloomFilter(allKeys.size());
+            for(String k: allKeys)bf.add(k);
+            out.write(bf.fromFilterToBytes());
+
+            out.writeLong(bloomOffset);
             out.writeLong(indexOffset);
             out.writeInt(indexKeys.size());
 

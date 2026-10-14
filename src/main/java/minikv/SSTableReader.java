@@ -4,13 +4,13 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import minikv.LookupResult.*;
-
 public class SSTableReader {
+    
     public static LookupResult get(String path, String key) throws IOException {
         try (RandomAccessFile raf = new RandomAccessFile(path, "r")) {
 
-            raf.seek(raf.length() - 12);
+            raf.seek(raf.length() - 20);
+            long bloomOffset = raf.readLong();
             long indexOffset = raf.readLong();
             int indexCount = raf.readInt();
 
@@ -43,7 +43,6 @@ public class SSTableReader {
 
             if(ans==-1)return new LookupResult.Absent();
 
-            // 4) scan from that offset
             raf.seek(idxOffsets.get(ans));
             while (raf.getFilePointer() < indexOffset) {
                 int keylen = raf.readInt();
@@ -65,6 +64,18 @@ public class SSTableReader {
 
             }
             return new LookupResult.Absent();
+        }
+    }
+
+    public static BloomFilter loadBloom(String path) throws IOException {
+        try (RandomAccessFile raf = new RandomAccessFile(path, "r")) {
+            raf.seek(raf.length() - 20);
+            long bloomOffset = raf.readLong();
+            int len = (int) (raf.length() - 20 - bloomOffset);
+            byte[] data = new byte[len];
+            raf.seek(bloomOffset);
+            raf.readFully(data);
+            return BloomFilter.fromBytestoFilter(data);
         }
     }
 }

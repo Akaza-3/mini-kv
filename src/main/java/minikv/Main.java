@@ -86,10 +86,42 @@ public class Main {
         // System.out.println(db.get("key1"));   // Deleted[]  (the memtable tombstone hides the SSTable value)
         // db.close();
 
-        KVStore db = new KVStore("data");
-        System.out.println(db.get("key1"));   // Deleted[]  (the tombstone was in the WAL, replayed into the memtable)
-        System.out.println(db.get("key2"));   // Found[value=val2]
-        System.out.println(db.get("key4"));   // Found[value=val4]
-        db.close();
+        // KVStore db = new KVStore("data");
+        // System.out.println(db.get("key1"));   // Deleted[]  (the tombstone was in the WAL, replayed into the memtable)
+        // System.out.println(db.get("key2"));   // Found[value=val2]
+        // System.out.println(db.get("key4"));   // Found[value=val4]
+        // db.close();
+
+
+        // KVStore db = new KVStore("data");
+
+        // // sst-1: key1=val1, key2=val2, key3=val3
+        // db.put("key1", "val1");
+        // db.put("key2", "val2");
+        // db.put("key3", "val3");      // 24 bytes -> flush
+
+        // // sst-2: key1 overwritten, plus key4, key5
+        // db.put("key1", "new1");
+        // db.put("key4", "val4");
+        // db.put("key5", "val5");      // 24 bytes -> flush
+
+        // // sst-3: key2 deleted, plus key6, key7
+        // db.delete("key2");           // 4 bytes
+        // db.put("key6", "val6");      // 12
+        // db.put("key7", "val7");      // 20 -> flush
+
+        // db.put("key8", "val8");      // stays in the memtable and WAL
+
+        // for (String k : new String[]{"key1", "key2", "key3", "key4", "key6", "key8", "nope"}) {
+        //     System.out.println(db.get(k));
+        // }
+        // db.close();
+
+        KVStore db1 = new KVStore("data");
+        for(String k: new String[]{"key2","key3","key9"}){
+            System.out.println(db1.get(k));
+        }
+        db1.close();
+
     }
 }
